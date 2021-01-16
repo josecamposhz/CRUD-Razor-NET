@@ -106,14 +106,29 @@
 @code {
     private MyPostgresDB DB = new MyPostgresDB();
     private List<DBTask> myTasks = new List<DBTask>();
-    private List<String> statusList = new List<String> { "Running", "Delivering", "Revising", "Accepted", "Cancelled" };
+    private List<String> statusList = new List<String>();
     private String currentStatus = "Running";
     private String currentRadio = "byStatus";
     private Boolean addingRecord = false;
     private DBTask newTask = new DBTask();
     protected override void OnInitialized()
     {
+        GetTaskStatuses();
         GetRunningTasks();
+    }
+    private void GetTaskStatuses()
+    {
+        statusList.Clear();
+        string sql = "SELECT unnest(enum_range(NULL::Task_Status));";
+        NpgsqlDataReader data = DB.executeSQL(sql);
+        while (data.Read())
+        {
+            for (int i = 0; i < data.FieldCount; i++)
+            {
+                statusList.Add(data.GetString(i));
+            }
+        }
+        data.Close();
     }
     private void GetRunningTasks()
     {
@@ -167,5 +182,9 @@
     private void updateTaskStatus(ChangeEventArgs e, DBTask task)
     {
         Console.WriteLine($"The task {task.task_id} should change to {e.Value.ToString()}");
+        string sql = $"UPDATE task SET status ='{e.Value.ToString()}' WHERE task_id = {task.task_id}";
+        NpgsqlDataReader data = DB.executeSQL(sql);
+        data.Close();
+        GetRunningTasks();
     }
 }
