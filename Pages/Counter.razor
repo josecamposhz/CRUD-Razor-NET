@@ -9,7 +9,7 @@
     <div style="display: flex; justify-content: space-between">
         <div>
             <input type="radio" name="radioBtn" checked="@(currentRadio.Equals("all"))" value="all"
-                @onchange="onChangeRadio" /> All records
+                @onchange="onChangeRadio" /> All tasks
             <input type="radio" name="radioBtn" checked="@(currentRadio.Equals("byStatus"))" value="byStatus"
                 @onchange="onChangeRadio" /> Filter by status
             <div class="mt-2" style="display: @(currentRadio.Equals("byStatus") ? "" : "none");">
@@ -61,11 +61,13 @@
                 </tr>
             }
         </table>
-        <p>Total of Running Tasks: @tot</p>
+        if (currentRadio == "byStatus") { <p>Total of @currentStatus Tasks: @tot</p> }
+        else { <p>Total of Tasks: @tot</p> }
     }
     else
     {
-        <h3>No Running Tasks</h3>
+        if (currentRadio == "byStatus") { <h3>No @currentStatus Tasks</h3> }
+        else { <h3>No Tasks</h3> }
     }
 } else {
     <table class="table table-dark" border="1">
@@ -107,14 +109,14 @@
     private MyPostgresDB DB = new MyPostgresDB();
     private List<DBTask> myTasks = new List<DBTask>();
     private List<String> statusList = new List<String>();
-    private String currentStatus = "Running";
-    private String currentRadio = "byStatus";
+    private String currentStatus;
+    private String currentRadio = "all";
     private Boolean addingRecord = false;
     private DBTask newTask = new DBTask();
     protected override void OnInitialized()
     {
         GetTaskStatuses();
-        GetRunningTasks();
+        GetTasks();
     }
     private void GetTaskStatuses()
     {
@@ -128,12 +130,13 @@
                 statusList.Add(data.GetString(i));
             }
         }
+        currentStatus = statusList[0];
         data.Close();
     }
-    private void GetRunningTasks()
+    private void GetTasks()
     {
         myTasks.Clear();
-        string sql = "SELECT task_id, taskname, responsible, deadline FROM task";
+        string sql = "SELECT task_id, taskname, responsible, deadline, status FROM task";
         if (currentRadio == "byStatus") sql += $" WHERE status='{currentStatus}'";
         sql += ";";
         NpgsqlDataReader data = DB.executeSQL(sql);
@@ -146,17 +149,19 @@
         }
         data.Close();
     }
-
     private void onChangeRadio(ChangeEventArgs args)
     {
         currentRadio = args.Value.ToString();
+        Console.WriteLine(currentRadio == "all" ? "Show all Tasks" : $"Show tasks from the type {currentStatus}");
+        GetTasks();
     }
 
     private void onChangeStatus(ChangeEventArgs args)
     {
-        Console.WriteLine($"Other records, from the type {args.Value.ToString()} should be displayed");
+        currentStatus = args.Value.ToString();
+        Console.WriteLine($"Other records, from the type {currentStatus} should be displayed");
+        GetTasks();
     }
-
     private void addTask()
     {
         Console.WriteLine("New button was pressed");
@@ -169,7 +174,7 @@
         newTask = new DBTask();
         // Volvemos a mostrar la tabla con los datos
         addingRecord = false;
-        GetRunningTasks();
+        GetTasks();
     }
     private void deleteTask(DBTask task)
     {
@@ -177,7 +182,7 @@
         string sql = $"DELETE FROM task WHERE task_id = {task.task_id}";
         NpgsqlDataReader data = DB.executeSQL(sql);
         data.Close();
-        GetRunningTasks();
+        GetTasks();
     }
     private void updateTaskStatus(ChangeEventArgs e, DBTask task)
     {
@@ -185,6 +190,6 @@
         string sql = $"UPDATE task SET status ='{e.Value.ToString()}' WHERE task_id = {task.task_id}";
         NpgsqlDataReader data = DB.executeSQL(sql);
         data.Close();
-        GetRunningTasks();
+        GetTasks();
     }
 }

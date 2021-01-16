@@ -38,9 +38,10 @@ namespace data01.Data
                     if (fname == "email_responsible")
                         this.email_responsible = r.GetString(i);
                     if (fname == "deadline")
-                    {
                         this.deadline = Convert.ToDateTime(r.GetTimeStamp(i).ToString());
-                    }
+                    if (fname == "status")
+                        this.status = r.GetString(i);
+                    
                 }
                 return true;
             }
