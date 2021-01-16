@@ -6,16 +6,16 @@ namespace data01.Data
     public class DBTask
     {
         public long task_id = -1;
-        public string taskname = "";
-        public string supervisor = "";
-        public string email_supervisor = "";
-        public string responsible = "";
-        public string email_responsible = "";
+        public string taskname = "Default Task";
+        public string supervisor = "José Campos";
+        public string email_supervisor = "jcampos@supervisor.cl";
+        public string responsible = "Responsible";
+        public string email_responsible = "email@responsible.cl";
         public string created_on = "";
-        public string deadline = "";
+        public DateTime deadline = DateTime.Now;
         public string first_delivering = "";
         public string first_revising = "";
-        public int estimate_hours = -1;
+        public int estimate_hours = 2;
         public int effective_hours = -1;
         public string status { get; set; } = "Running";
         public bool set_from_reader(NpgsqlDataReader r)
@@ -38,7 +38,9 @@ namespace data01.Data
                     if (fname == "email_responsible")
                         this.email_responsible = r.GetString(i);
                     if (fname == "deadline")
-                        this.deadline = r.GetString(i);
+                    {
+                        this.deadline = Convert.ToDateTime(r.GetTimeStamp(i).ToString());
+                    }
                 }
                 return true;
             }
